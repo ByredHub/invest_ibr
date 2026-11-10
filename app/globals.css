@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-paper text-ink antialiased; font-feature-settings: "tnum" 0; }
+  ::selection { background: #57cfcb55; }
+  :focus-visible { outline: 2px solid #57cfcb; outline-offset: 2px; }
+  input[type="month"], input[type="date"] { min-height: 40px; }
+}
+
+@layer components {
+  .label-caps { @apply text-[11px] font-medium uppercase tracking-wider text-muted; }
+  .num { font-variant-numeric: tabular-nums; }
+  .card { @apply rounded-card border border-line bg-white; }
+  .btn { @apply inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-ctl px-4 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-ink text-white hover:bg-ink-700; }
+  .btn-accent { @apply btn bg-tiffany text-ink hover:bg-[#6edad6]; }
+  .btn-ghost { @apply btn border border-line bg-white text-ink hover:bg-paper; }
+  .btn-danger { @apply btn bg-brick text-white hover:bg-[#9c3709]; }
+  .input { @apply h-10 w-full rounded-ctl border border-line bg-white px-3 text-sm text-ink placeholder:text-slate2 transition-colors duration-150 hover:border-[#d3cfc3] focus:border-tiffany focus:outline-none focus:ring-2 focus:ring-tiffany/30; }
+  .th { @apply sticky top-0 z-10 border-b border-line bg-[#FBFAF7] px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted; }
+  .td { @apply border-b border-line px-4 py-3 text-sm; }
+  .skeleton { @apply relative overflow-hidden rounded-md bg-[#ECE9E1]; }
+  .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); animation: shimmer 1.3s infinite; }
+}
+
+.print-only { display: none; }
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .print-root { max-width: none !important; padding: 0 !important; }
+  .card { break-inside: avoid; border-color: #d9d6cc; }
+  .print-flat { box-shadow: none !important; background: #fff !important; color: #041121 !important; }
+  .print-flat .label-caps { color: #6B7280 !important; }
+  img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .recharts-wrapper { break-inside: avoid; }
+}

@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Роли и статусы хранятся строками (ADMIN|INVESTOR, ACTIVE|PAUSED|CLOSED) — схема переносима на Postgres.
+model User {
+  id           String   @id @default(cuid())
+  role         String   @default("INVESTOR")
+  fullName     String
+  phone        String   @unique
+  passwordHash String
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  // Дата первого взноса — точка отсчёта персональных отчётных периодов (по 3 месяца).
+  periodAnchor DateTime?
+
+  operations    Operation[]
+  assets        Asset[]
+  files         FileUpload[]
+  reports       Report[]
+  notifications Notification[]
+  withdrawals   WithdrawalRequest[]
+  quarters      InvestorQuarter[]
+}
+
+model FileUpload {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  storedAs  String
+  mime      String
+  size      Int
+  createdAt DateTime @default(now())
+  assets    Asset[]
+
+  @@index([ownerId])
+}
+
+model Asset {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  name         String
+  ticker       String
+  quantity     String
+  unitPriceKop Int
+  totalKop     Int
+  fileId       String
+  file         FileUpload @relation(fields: [fileId], references: [id])
+  purchasedAt  DateTime
+  createdAt    DateTime   @default(now())
+  operation    Operation?
+
+  @@index([userId])
+}
+
+// DEPOSIT | TRANSFER | PURCHASE | INCOME | WITHDRAWAL. Суммы — целые копейки. Журнал только на добавление.
+// quarterKey — персональный период инвестора вида "P{seq}" (периоды по 3 месяца от periodAnchor).
+model Operation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  type          String
+  amountKop     Int
+  effectiveDate DateTime
+  quarterKey    String
+  note          String?
+  assetId       String?  @unique
+  asset         Asset?   @relation(fields: [assetId], references: [id])
+  createdById   String
+  createdAt     DateTime @default(now())
+
+  @@index([userId, effectiveDate])
+  @@index([quarterKey])
+}
+
+// Закрытый отчётный период конкретного инвестора. Периоды нумеруются от periodAnchor инвестора.
+model InvestorQuarter {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  seq              Int      // 1, 2, 3... — порядковый номер периода инвестора
+  startAt          DateTime
+  endAt            DateTime
+  lockedAt         DateTime @default(now())
+  lockedById       String
+  payoutOpenedAt   DateTime?
+  payoutOpenedById String?
+  reports          Report[]
+
+  @@unique([userId, seq])
+  @@index([userId])
+}
+
+model Report {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  investorQuarterId String          @unique
+  quarter           InvestorQuarter @relation(fields: [investorQuarterId], references: [id])
+  token             String          @unique
+  snapshot          String
+  createdAt         DateTime        @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  reportId  String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  clientId  String?
+  action    String
+  details   String   @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([clientId, createdAt])
+  @@index([createdAt])
+}
+
+// PENDING | PAID | REJECTED
+model WithdrawalRequest {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  amountKop    Int
+  status       String    @default("PENDING")
+  createdAt    DateTime  @default(now())
+  decidedAt    DateTime?
+  decidedById  String?
+  rejectReason String?
+  operationId  String?   @unique
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}

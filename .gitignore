@@ -1,0 +1,14 @@
+node_modules
+.next
+.env
+*.db
+*.db-journal
+storage/uploads/*
+!storage/uploads/.gitkeep
+next-env.d.ts
+tsconfig.tsbuildinfo
+screenshots
+prisma/smoke.db*
+storage/smoke-uploads
+.next-smoke
+.next-build
